@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Peta Arah Mata Angin + Kiblat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <style>
+    body, html { margin: 0; padding: 0; height: 100%; }
+    #map { height: 100%; }
+    .leaflet-label {
+      background-color: white;
+      padding: 2px 5px;
+      border: 1px solid #999;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <script>
+    function initMap(position) {
+      const lat = position.coords.latitude;
+      const lng = position.coords.longitude;
+
+      const map = L.map('map').setView([lat, lng], 17);
+
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap'
+      }).addTo(map);
+
+      const userLatLng = L.latLng(lat, lng);
+      L.marker(userLatLng).addTo(map).bindPopup("Lokasi Anda").openPopup();
+
+      const offset = 0.001; // sekitar 100 meter ke setiap arah
+
+      const arah = {
+        N: [lat + offset, lng],
+        S: [lat - offset, lng],
+        E: [lat, lng + offset],
+        W: [lat, lng - offset]
+      };
+
+      for (const [label, coord] of Object.entries(arah)) {
+        L.polyline([userLatLng, coord], {
+          color: 'black',
+          dashArray: '5, 10'
+        }).addTo(map);
+
+        L.marker(coord, {
+          icon: L.divIcon({
+            className: 'leaflet-label',
+            html: label,
+            iconSize: [20, 20]
+          })
+        }).addTo(map);
+      }
+
+      // Tambahkan arah kiblat (dari lokasi user ke Ka'bah di Mekkah)
+      const kaabaLat = 21.4225;
+      const kaabaLng = 39.8262;
+
+      const kaabaLatLng = L.latLng(kaabaLat, kaabaLng);
+
+      L.polyline([userLatLng, kaabaLatLng], {
+        color: 'green',
+        dashArray: '5, 5'
+      }).addTo(map);
+
+      const midLat = (lat + kaabaLat) / 2;
+      const midLng = (lng + kaabaLng) / 2;
+
+      L.marker([midLat, midLng], {
+        icon: L.divIcon({
+          className: 'leaflet-label',
+          html: 'Kiblat',
+          iconSize: [40, 20]
+        })
+      }).addTo(map);
+    }
+
+    function onError() {
+      alert('Tidak bisa mendapatkan lokasi Anda. Pastikan izin lokasi aktif.');
+    }
+
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(initMap, onError);
+    } else {
+      alert('Geolocation tidak didukung browser Anda.');
+    }
+  </script>
+</body>
+</html>
