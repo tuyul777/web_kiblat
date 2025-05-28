@@ -6,7 +6,12 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
   <style>
     body, html { margin: 0; padding: 0; height: 100%; }
-    #map { height: 100%; }
+    #map { height: 90%; }
+    #location-form {
+      padding: 10px;
+      background: #f8f8f8;
+      border-bottom: 1px solid #ccc;
+    }
     .leaflet-label {
       background-color: white;
       padding: 2px 5px;
@@ -16,15 +21,23 @@
   </style>
 </head>
 <body>
+  <div id="location-form">
+    <label>Masukkan lokasi (format: lat,lng): </label>
+    <input type="text" id="manual-coords" placeholder="contoh: -6.2,106.8">
+    <button onclick="useManualCoords()">Tampilkan</button>
+    <button onclick="useGeolocation()">Gunakan GPS</button>
+  </div>
   <div id="map"></div>
 
   <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
   <script>
-    function initMap(position) {
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
+    let map;
 
-      const map = L.map('map').setView([lat, lng], 17);
+    function initMap(lat, lng) {
+      if (map) {
+        map.remove();
+      }
+      map = L.map('map').setView([lat, lng], 17);
 
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
@@ -34,8 +47,7 @@
       const userLatLng = L.latLng(lat, lng);
       L.marker(userLatLng).addTo(map).bindPopup("Lokasi Anda").openPopup();
 
-      const offset = 0.001; // sekitar 100 meter ke setiap arah
-
+      const offset = 0.001;
       const arah = {
         N: [lat + offset, lng],
         S: [lat - offset, lng],
@@ -58,10 +70,9 @@
         }).addTo(map);
       }
 
-      // Tambahkan arah kiblat (dari lokasi user ke Ka'bah di Mekkah)
+      // Arah Kiblat
       const kaabaLat = 21.4225;
       const kaabaLng = 39.8262;
-
       const kaabaLatLng = L.latLng(kaabaLat, kaabaLng);
 
       L.polyline([userLatLng, kaabaLatLng], {
@@ -81,15 +92,39 @@
       }).addTo(map);
     }
 
-    function onError() {
-      alert('Tidak bisa mendapatkan lokasi Anda. Pastikan izin lokasi aktif.');
+    function useGeolocation() {
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            initMap(lat, lng);
+          },
+          () => alert('Gagal mendapatkan lokasi GPS.')
+        );
+      } else {
+        alert('Geolocation tidak didukung oleh browser Anda.');
+      }
     }
 
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(initMap, onError);
-    } else {
-      alert('Geolocation tidak didukung browser Anda.');
+    function useManualCoords() {
+      const input = document.getElementById("manual-coords").value;
+      const parts = input.split(',');
+      if (parts.length === 2) {
+        const lat = parseFloat(parts[0]);
+        const lng = parseFloat(parts[1]);
+        if (!isNaN(lat) && !isNaN(lng)) {
+          initMap(lat, lng);
+        } else {
+          alert("Format koordinat salah. Gunakan angka.");
+        }
+      } else {
+        alert("Format input salah. Gunakan lat,lng.");
+      }
     }
+
+    // Inisialisasi dengan geolokasi default saat halaman dibuka
+    useGeolocation();
   </script>
 </body>
 </html>
